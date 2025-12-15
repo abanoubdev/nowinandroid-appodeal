@@ -30,9 +30,9 @@ plugins {
 
 android {
     defaultConfig {
-        applicationId = "com.google.samples.apps.nowinandroid"
+        applicationId = "com.google.samples.apps.nowinandroid.appodeal"
         versionCode = 8
-        versionName = "0.1.2" // X.Y.Z; X = Major, Y = minor, Z = Patch level
+        versionName = "0.1.2"
 
         // Custom test runner to set up Hilt dependency graph
         testInstrumentationRunner = "com.google.samples.apps.nowinandroid.core.testing.NiaTestRunner"
@@ -81,6 +81,7 @@ dependencies {
     implementation(projects.feature.settings.impl)
 
     implementation(projects.core.common)
+    implementation(projects.core.addisplay)
     implementation(projects.core.ui)
     implementation(projects.core.designsystem)
     implementation(projects.core.data)

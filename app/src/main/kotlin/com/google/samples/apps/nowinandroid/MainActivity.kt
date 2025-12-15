@@ -34,6 +34,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.metrics.performance.JankStats
 import androidx.tracing.trace
 import com.google.samples.apps.nowinandroid.MainActivityUiState.Loading
+import com.google.samples.apps.nowinandroid.appodeal.addisplay.manager.AdManager
 import com.google.samples.apps.nowinandroid.core.analytics.AnalyticsHelper
 import com.google.samples.apps.nowinandroid.core.analytics.LocalAnalyticsHelper
 import com.google.samples.apps.nowinandroid.core.data.repository.UserNewsResourceRepository
@@ -71,6 +72,9 @@ class MainActivity : ComponentActivity() {
     lateinit var analyticsHelper: AnalyticsHelper
 
     @Inject
+    lateinit var adManager: AdManager
+
+    @Inject
     lateinit var userNewsResourceRepository: UserNewsResourceRepository
 
     private val viewModel: MainActivityViewModel by viewModels()
@@ -78,6 +82,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        adManager.initialize(
+            this,
+            {
+
+            },
+        )
 
         // We keep this as a mutable state, so that we can track changes inside the composition.
         // This allows us to react to dark/light mode changes.
@@ -88,6 +99,34 @@ class MainActivity : ComponentActivity() {
                 disableDynamicTheming = Loading.shouldDisableDynamicTheming,
             ),
         )
+
+        // Keep the splash screen on-screen until the UI state is loaded. This condition is
+        // evaluated each time the app needs to be redrawn so it should be fast to avoid blocking
+        // the UI.
+        splashScreen.setKeepOnScreenCondition { viewModel.uiState.value.shouldKeepSplashScreen() }
+
+        setContent {
+            val appState = rememberNiaAppState(
+                networkMonitor = networkMonitor,
+                userNewsResourceRepository = userNewsResourceRepository,
+                timeZoneMonitor = timeZoneMonitor,
+            )
+
+            val currentTimeZone by appState.currentTimeZone.collectAsStateWithLifecycle()
+
+            CompositionLocalProvider(
+                LocalAnalyticsHelper provides analyticsHelper,
+                LocalTimeZone provides currentTimeZone,
+            ) {
+                NiaTheme(
+                    darkTheme = themeSettings.darkTheme,
+                    androidTheme = themeSettings.androidTheme,
+                    disableDynamicTheming = themeSettings.disableDynamicTheming,
+                ) {
+                    NiaApp(appState)
+                }
+            }
+        }
 
         // Update the uiState
         lifecycleScope.launch {
@@ -124,34 +163,6 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                     }
-            }
-        }
-
-        // Keep the splash screen on-screen until the UI state is loaded. This condition is
-        // evaluated each time the app needs to be redrawn so it should be fast to avoid blocking
-        // the UI.
-        splashScreen.setKeepOnScreenCondition { viewModel.uiState.value.shouldKeepSplashScreen() }
-
-        setContent {
-            val appState = rememberNiaAppState(
-                networkMonitor = networkMonitor,
-                userNewsResourceRepository = userNewsResourceRepository,
-                timeZoneMonitor = timeZoneMonitor,
-            )
-
-            val currentTimeZone by appState.currentTimeZone.collectAsStateWithLifecycle()
-
-            CompositionLocalProvider(
-                LocalAnalyticsHelper provides analyticsHelper,
-                LocalTimeZone provides currentTimeZone,
-            ) {
-                NiaTheme(
-                    darkTheme = themeSettings.darkTheme,
-                    androidTheme = themeSettings.androidTheme,
-                    disableDynamicTheming = themeSettings.disableDynamicTheming,
-                ) {
-                    NiaApp(appState)
-                }
             }
         }
     }
