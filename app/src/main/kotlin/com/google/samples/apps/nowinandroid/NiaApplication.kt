@@ -22,6 +22,7 @@ import android.os.StrictMode
 import android.os.StrictMode.ThreadPolicy.Builder
 import coil.ImageLoader
 import coil.ImageLoaderFactory
+import com.google.samples.apps.nowinandroid.appodeal.addisplay.manager.NiaAdManager
 import com.google.samples.apps.nowinandroid.sync.initializers.Sync
 import com.google.samples.apps.nowinandroid.util.ProfileVerifierLogger
 import dagger.hilt.android.HiltAndroidApp
@@ -36,16 +37,22 @@ class NiaApplication : Application(), ImageLoaderFactory {
     lateinit var imageLoader: dagger.Lazy<ImageLoader>
 
     @Inject
+    lateinit var niaAdManager: NiaAdManager
+
+    @Inject
     lateinit var profileVerifierLogger: ProfileVerifierLogger
 
     override fun onCreate() {
         super.onCreate()
-
         setStrictModePolicy()
-
+        initAdManager()
         // Initialize Sync; the system responsible for keeping data in the app up to date.
         Sync.initialize(context = this)
         profileVerifierLogger()
+    }
+
+    private fun initAdManager() {
+        niaAdManager.initialize(applicationContext)
     }
 
     override fun newImageLoader(): ImageLoader = imageLoader.get()

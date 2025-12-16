@@ -34,6 +34,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.metrics.performance.JankStats
 import androidx.tracing.trace
 import com.google.samples.apps.nowinandroid.MainActivityUiState.Loading
+import com.google.samples.apps.nowinandroid.appodeal.addisplay.helper.LocalAdManagersHelper
+import com.google.samples.apps.nowinandroid.appodeal.addisplay.manager.NiaAdManager
 import com.google.samples.apps.nowinandroid.core.analytics.AnalyticsHelper
 import com.google.samples.apps.nowinandroid.core.analytics.LocalAnalyticsHelper
 import com.google.samples.apps.nowinandroid.core.data.repository.UserNewsResourceRepository
@@ -58,20 +60,17 @@ class MainActivity : ComponentActivity() {
     /**
      * Lazily inject [JankStats], which is used to track jank throughout the app.
      */
-    @Inject
-    lateinit var lazyStats: dagger.Lazy<JankStats>
+    @Inject lateinit var lazyStats: dagger.Lazy<JankStats>
 
-    @Inject
-    lateinit var networkMonitor: NetworkMonitor
+    @Inject lateinit var networkMonitor: NetworkMonitor
 
-    @Inject
-    lateinit var timeZoneMonitor: TimeZoneMonitor
+    @Inject lateinit var timeZoneMonitor: TimeZoneMonitor
 
-    @Inject
-    lateinit var analyticsHelper: AnalyticsHelper
+    @Inject lateinit var analyticsHelper: AnalyticsHelper
 
-    @Inject
-    lateinit var userNewsResourceRepository: UserNewsResourceRepository
+    @Inject lateinit var niaAdManager: NiaAdManager
+
+    @Inject lateinit var userNewsResourceRepository: UserNewsResourceRepository
 
     private val viewModel: MainActivityViewModel by viewModels()
 
@@ -89,6 +88,34 @@ class MainActivity : ComponentActivity() {
             ),
         )
 
+        // Keep the splash screen on-screen until the UI state is loaded. This condition is
+        // evaluated each time the app needs to be redrawn so it should be fast to avoid blocking
+        // the UI.
+        splashScreen.setKeepOnScreenCondition { viewModel.uiState.value.shouldKeepSplashScreen() }
+
+        setContent {
+            val appState = rememberNiaAppState(
+                networkMonitor = networkMonitor,
+                userNewsResourceRepository = userNewsResourceRepository,
+                timeZoneMonitor = timeZoneMonitor,
+            )
+
+            val currentTimeZone by appState.currentTimeZone.collectAsStateWithLifecycle()
+
+            CompositionLocalProvider(
+                LocalAnalyticsHelper provides analyticsHelper,
+                LocalTimeZone provides currentTimeZone,
+                LocalAdManagersHelper provides niaAdManager,
+            ) {
+                NiaTheme(
+                    darkTheme = themeSettings.darkTheme,
+                    androidTheme = themeSettings.androidTheme,
+                    disableDynamicTheming = themeSettings.disableDynamicTheming,
+                ) {
+                    NiaApp(appState)
+                }
+            }
+        }
         // Update the uiState
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -101,10 +128,7 @@ class MainActivity : ComponentActivity() {
                         androidTheme = uiState.shouldUseAndroidTheme,
                         disableDynamicTheming = uiState.shouldDisableDynamicTheming,
                     )
-                }
-                    .onEach { themeSettings = it }
-                    .map { it.darkTheme }
-                    .distinctUntilChanged()
+                }.onEach { themeSettings = it }.map { it.darkTheme }.distinctUntilChanged()
                     .collect { darkTheme ->
                         trace("niaEdgeToEdge") {
                             // Turn off the decor fitting system windows, which allows us to handle insets,
@@ -124,34 +148,6 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                     }
-            }
-        }
-
-        // Keep the splash screen on-screen until the UI state is loaded. This condition is
-        // evaluated each time the app needs to be redrawn so it should be fast to avoid blocking
-        // the UI.
-        splashScreen.setKeepOnScreenCondition { viewModel.uiState.value.shouldKeepSplashScreen() }
-
-        setContent {
-            val appState = rememberNiaAppState(
-                networkMonitor = networkMonitor,
-                userNewsResourceRepository = userNewsResourceRepository,
-                timeZoneMonitor = timeZoneMonitor,
-            )
-
-            val currentTimeZone by appState.currentTimeZone.collectAsStateWithLifecycle()
-
-            CompositionLocalProvider(
-                LocalAnalyticsHelper provides analyticsHelper,
-                LocalTimeZone provides currentTimeZone,
-            ) {
-                NiaTheme(
-                    darkTheme = themeSettings.darkTheme,
-                    androidTheme = themeSettings.androidTheme,
-                    disableDynamicTheming = themeSettings.disableDynamicTheming,
-                ) {
-                    NiaApp(appState)
-                }
             }
         }
     }
