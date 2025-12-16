@@ -6,10 +6,14 @@ plugins {
 
 android {
     namespace = "com.google.samples.apps.nowinandroid.appodeal.addisplay"
+    buildFeatures {
+        buildConfig = true
+    }
+
+    testOptions.unitTests.isIncludeAndroidResources = true
 }
 
 dependencies {
     implementation(libs.androidx.compose.runtime)
-//    implementation(libs.play.services.ads)
     implementation(libs.appodeal.sdk)
 }

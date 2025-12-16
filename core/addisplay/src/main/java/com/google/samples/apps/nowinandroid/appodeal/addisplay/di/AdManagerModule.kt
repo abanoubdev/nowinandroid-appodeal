@@ -16,16 +16,18 @@
 
 package com.google.samples.apps.nowinandroid.appodeal.addisplay.di
 
-import com.google.samples.apps.nowinandroid.appodeal.addisplay.manager.AdManager
-import com.google.samples.apps.nowinandroid.appodeal.addisplay.manager.AdManagerImpl
+import com.google.samples.apps.nowinandroid.appodeal.addisplay.manager.NiaAdManager
+import com.google.samples.apps.nowinandroid.appodeal.addisplay.manager.NiaAdManagerImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class AdManagerModule {
     @Binds
-    abstract fun bindsAdManagerImpl(adManager: AdManagerImpl): AdManager
+    @Singleton
+    abstract fun bindsAdManagerImpl(adManager: NiaAdManagerImpl): NiaAdManager
 }

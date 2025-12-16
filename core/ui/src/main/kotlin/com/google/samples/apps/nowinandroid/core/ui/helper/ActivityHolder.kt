@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-package com.google.samples.apps.nowinandroid.appodeal.addisplay.manager
+package com.google.samples.apps.nowinandroid.core.ui.helper
 
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 
-interface AdManager {
-    fun initialize(
-        context: Context,
-        onAppodealSdkInitialized: () -> Unit
-    )
+object ActivityHolder {
+    fun getActivity(context: Context): Activity? = context.findActivity()
+}
+
+fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }

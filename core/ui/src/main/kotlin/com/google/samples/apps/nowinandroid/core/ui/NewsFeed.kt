@@ -36,9 +36,11 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import com.google.samples.apps.nowinandroid.appodeal.addisplay.helper.LocalAdManagersHelper
 import com.google.samples.apps.nowinandroid.core.analytics.LocalAnalyticsHelper
 import com.google.samples.apps.nowinandroid.core.designsystem.theme.NiaTheme
 import com.google.samples.apps.nowinandroid.core.model.data.UserNewsResource
+import com.google.samples.apps.nowinandroid.core.ui.helper.ActivityHolder
 
 /**
  * An extension on [LazyListScope] defining a feed with news resources.
@@ -61,19 +63,32 @@ fun LazyStaggeredGridScope.newsFeed(
             ) { userNewsResource ->
                 val context = LocalContext.current
                 val analyticsHelper = LocalAnalyticsHelper.current
+                val niaAdManager = LocalAdManagersHelper.current
                 val backgroundColor = MaterialTheme.colorScheme.background.toArgb()
 
                 NewsResourceCardExpanded(
                     userNewsResource = userNewsResource,
                     isBookmarked = userNewsResource.isSaved,
                     onClick = {
-                        onExpandedCardClick()
-                        analyticsHelper.logNewsResourceOpened(
-                            newsResourceId = userNewsResource.id,
-                        )
-                        launchCustomChromeTab(context, Uri.parse(userNewsResource.url), backgroundColor)
+                        val activity = ActivityHolder.getActivity(context)
+                        if (activity != null) {
+                            niaAdManager.showInterstitialAd(
+                                activity,
+                                {
+                                    onExpandedCardClick()
+                                    analyticsHelper.logNewsResourceOpened(
+                                        newsResourceId = userNewsResource.id,
+                                    )
+                                    launchCustomChromeTab(
+                                        context,
+                                        Uri.parse(userNewsResource.url),
+                                        backgroundColor,
+                                    )
 
-                        onNewsResourceViewed(userNewsResource.id)
+                                    onNewsResourceViewed(userNewsResource.id)
+                                },
+                            )
+                        }
                     },
                     hasBeenViewed = userNewsResource.hasBeenViewed,
                     onToggleBookmark = {
