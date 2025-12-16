@@ -40,10 +40,12 @@ class NiaAdManagerImpl @Inject constructor() : NiaAdManager {
     internal fun setInterstitialListeners(onAppodealAdClosed: () -> Unit) {
         Appodeal.setInterstitialCallbacks(
             object : InterstitialCallbacks {
+
                 override fun onInterstitialLoaded(isPrecache: Boolean) {
                 }
 
                 override fun onInterstitialFailedToLoad() {
+                    onAppodealAdClosed.invoke()
                 }
 
                 override fun onInterstitialClicked() {
