@@ -37,6 +37,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.google.samples.apps.nowinandroid.appodeal.addisplay.helper.LocalAdManagersHelper
+import com.google.samples.apps.nowinandroid.core.analytics.AnalyticsHelper
 import com.google.samples.apps.nowinandroid.core.analytics.LocalAnalyticsHelper
 import com.google.samples.apps.nowinandroid.core.designsystem.theme.NiaTheme
 import com.google.samples.apps.nowinandroid.core.model.data.UserNewsResource
@@ -53,6 +54,7 @@ fun LazyStaggeredGridScope.newsFeed(
     onTopicClick: (String) -> Unit,
     onExpandedCardClick: () -> Unit = {},
 ) {
+
     when (feedState) {
         NewsFeedUiState.Loading -> Unit
         is NewsFeedUiState.Success -> {
@@ -65,29 +67,27 @@ fun LazyStaggeredGridScope.newsFeed(
                 val analyticsHelper = LocalAnalyticsHelper.current
                 val niaAdManager = LocalAdManagersHelper.current
                 val backgroundColor = MaterialTheme.colorScheme.background.toArgb()
+                val activity = ActivityHolder.getActivity(context)
+
+                niaAdManager.showBannerAd(activity)
 
                 NewsResourceCardExpanded(
                     userNewsResource = userNewsResource,
                     isBookmarked = userNewsResource.isSaved,
                     onClick = {
-                        val activity = ActivityHolder.getActivity(context)
                         if (activity != null) {
                             niaAdManager.showInterstitialAd(
                                 activity,
-                                {
-                                    onExpandedCardClick()
-                                    analyticsHelper.logNewsResourceOpened(
-                                        newsResourceId = userNewsResource.id,
-                                    )
-                                    launchCustomChromeTab(
-                                        context,
-                                        Uri.parse(userNewsResource.url),
-                                        backgroundColor,
-                                    )
-
-                                    onNewsResourceViewed(userNewsResource.id)
-                                },
-                            )
+                            ) {
+                                onNewsItemClicked(
+                                    onExpandedCardClick,
+                                    analyticsHelper,
+                                    userNewsResource,
+                                    context,
+                                    backgroundColor,
+                                    onNewsResourceViewed
+                                )
+                            }
                         }
                     },
                     hasBeenViewed = userNewsResource.hasBeenViewed,
@@ -105,6 +105,26 @@ fun LazyStaggeredGridScope.newsFeed(
             }
         }
     }
+}
+private fun onNewsItemClicked(
+    onExpandedCardClick: () -> Unit,
+    analyticsHelper: AnalyticsHelper,
+    userNewsResource: UserNewsResource,
+    context: Context,
+    backgroundColor: Int,
+    onNewsResourceViewed: (String) -> Unit,
+) {
+    onExpandedCardClick()
+    analyticsHelper.logNewsResourceOpened(
+        newsResourceId = userNewsResource.id,
+    )
+    launchCustomChromeTab(
+        context,
+        Uri.parse(userNewsResource.url),
+        backgroundColor,
+    )
+
+    onNewsResourceViewed(userNewsResource.id)
 }
 
 fun launchCustomChromeTab(context: Context, uri: Uri, @ColorInt toolbarColor: Int) {

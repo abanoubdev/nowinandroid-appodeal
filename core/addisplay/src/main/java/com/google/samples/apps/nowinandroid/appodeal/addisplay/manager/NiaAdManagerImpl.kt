@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.util.Log
 import com.appodeal.ads.Appodeal
+import com.appodeal.ads.BannerCallbacks
 import com.appodeal.ads.InterstitialCallbacks
 import com.appodeal.ads.initializing.ApdInitializationError
 import com.appodeal.ads.utils.Log.LogLevel
@@ -14,6 +15,7 @@ import kotlin.collections.forEach
 
 internal const val APP_KEY = "dc63c965e20a5c68fc95c1b01ced6a7e02102d9583a26576"
 private const val placementName = "default"
+private const val TAG = "NiaAdManagerImpl"
 
 @Singleton
 class NiaAdManagerImpl @Inject constructor() : NiaAdManager {
@@ -35,6 +37,43 @@ class NiaAdManagerImpl @Inject constructor() : NiaAdManager {
         } else {
             onAppodealAdClosed.invoke()
         }
+    }
+
+    override fun showBannerAd(activity: Activity?) {
+        if (Appodeal.canShow(Appodeal.BANNER, placementName)) {
+            Appodeal.show(activity!!, Appodeal.BANNER_TOP, placementName)
+            setBannerListeners()
+        }
+    }
+
+    internal fun setBannerListeners() {
+        Appodeal.setBannerCallbacks(
+            object : BannerCallbacks {
+                override fun onBannerLoaded(height: Int, isPrecache: Boolean) {
+                    Log.d(TAG, "Banner was loaded, isPrecache: $isPrecache")
+                }
+
+                override fun onBannerFailedToLoad() {
+                    Log.d(TAG, "Banner failed to load")
+                }
+
+                override fun onBannerClicked() {
+                    Log.d(TAG, "Banner was clicked")
+                }
+
+                override fun onBannerShowFailed() {
+                    Log.d(TAG, "Banner failed to show")
+                }
+
+                override fun onBannerShown() {
+                    Log.d(TAG, "Banner was shown")
+                }
+
+                override fun onBannerExpired() {
+                    Log.d(TAG, "Banner was expired")
+                }
+            },
+        )
     }
 
     internal fun setInterstitialListeners(onAppodealAdClosed: () -> Unit) {
